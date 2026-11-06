@@ -183,6 +183,15 @@ config ZMK_BLE_PASSKEY_ENTRY
     bool "Require passkey entry on the keyboard to complete pairing"
     select RING_BUFFER
 
+config ZMK_BLE_QUIET_ON_USB
+    bool "Stop host advertising and hide the BT status LED while USB is connected"
+    depends on ZMK_USB
+    help
+      While a USB cable is attached, the keyboard does not advertise to BLE hosts,
+      so it cannot be discovered or paired, and the Kinesis Adv360 Bluetooth status
+      LED is turned off. Existing BLE host connections are left alone, and the
+      split link between halves is unaffected. Unplug USB to pair a new host.
+
 config BT_SMP_ALLOW_UNAUTH_OVERWRITE
     imply ZMK_BLE_PASSKEY_ENTRY
 

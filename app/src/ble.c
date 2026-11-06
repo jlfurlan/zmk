@@ -37,6 +37,11 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include <zmk/event_manager.h>
 #include <zmk/events/ble_active_profile_changed.h>
 
+#if IS_ENABLED(CONFIG_ZMK_BLE_QUIET_ON_USB)
+#include <zmk/usb.h>
+#include <zmk/events/usb_conn_state_changed.h>
+#endif
+
 #if IS_ENABLED(CONFIG_ZMK_BLE_PASSKEY_ENTRY)
 #include <zmk/events/keycode_state_changed.h>
 
@@ -179,6 +184,12 @@ int update_advertising(void) {
         // LOG_DBG("Directed advertising to %s", addr_str);
         // desired_adv = ZMK_ADV_DIR;
     }
+#if IS_ENABLED(CONFIG_ZMK_BLE_QUIET_ON_USB)
+    if (zmk_usb_is_powered()) {
+        // Wired mode: never advertise to hosts while a USB cable is attached.
+        desired_adv = ZMK_ADV_NONE;
+    }
+#endif
     LOG_DBG("advertising from %d to %d", advertising_status, desired_adv);
 
     switch (desired_adv + CURR_ADV(advertising_status)) {
@@ -810,5 +821,17 @@ static int zmk_ble_listener(const zmk_event_t *eh) {
 ZMK_LISTENER(zmk_ble, zmk_ble_listener);
 ZMK_SUBSCRIPTION(zmk_ble, zmk_keycode_state_changed);
 #endif /* IS_ENABLED(CONFIG_ZMK_BLE_PASSKEY_ENTRY) */
+
+#if IS_ENABLED(CONFIG_ZMK_BLE_QUIET_ON_USB)
+static int zmk_ble_usb_listener(const zmk_event_t *eh) {
+    if (as_zmk_usb_conn_state_changed(eh)) {
+        k_work_submit(&update_advertising_work);
+    }
+    return 0;
+}
+
+ZMK_LISTENER(zmk_ble_usb, zmk_ble_usb_listener);
+ZMK_SUBSCRIPTION(zmk_ble_usb, zmk_usb_conn_state_changed);
+#endif /* IS_ENABLED(CONFIG_ZMK_BLE_QUIET_ON_USB) */
 
 SYS_INIT(zmk_ble_init, APPLICATION, CONFIG_ZMK_BLE_INIT_PRIORITY);

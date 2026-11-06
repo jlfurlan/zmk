@@ -309,6 +309,12 @@ static void zmk_rgb_underglow_effect_kinesis() {
         bt_blinking = zmk_kinesis_blink_step(1, 13);
     }
     pixels[1] = (bt_idx < NUM_BT_COLORS && !bt_blinking) ? BT_COLORS[bt_idx] : LED_RGB(0x000000);
+#if IS_ENABLED(CONFIG_ZMK_BLE_QUIET_ON_USB)
+    if (zmk_usb_is_powered()) {
+        // Wired mode: Bluetooth status is irrelevant, so keep this LED dark.
+        pixels[1] = LED_RGB(0x000000);
+    }
+#endif
 
     // set third led to layer state
     pixels[2] = LAYER_COLORS[layer_color_left];
